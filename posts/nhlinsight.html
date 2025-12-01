@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Leafs Insight</title>
+</head>
+
+<body class="bg-gray-100">
+
+<div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-xl shadow space-y-6">
+
+    <h1 class="text-3xl font-bold">
+        NHL Analysis (1963 - 2022)
+    </h1>
+
+    <img src="mcdavid.png" class="rounded-xl shadow">
+
+    <p class="text-gray-700 leading-relaxed">
+        This is my very first project using pandas and matplotlib altogether.
+        In this entry, I will show some analytics I made with 
+        <a href="https://www.kaggle.com/datasets/mattop/nhl-draft-hockey-player-data-1963-2022" 
+           class="text-blue-600 underline" 
+           target="_blank">this</a> database.
+        Shoutout to OP for the dataset!
+    </p>
+
+    <h1 class="text-xl font-bold text-pink-400">
+        Import the libraries and .csv file
+    </h1>
+    
+<!-- CODE BLOCK -->
+<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
+
+    <!-- HEADER -->
+    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+        <span>python</span>
+
+        <!-- COPY BUTTON -->
+        <button 
+            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
+            class="text-gray-300 hover:text-white text-xs">
+            Copy
+        </button>
+    </div>
+
+    <!-- CODE -->
+    <pre class="p-4 text-gray-200 overflow-x-auto text-sm">
+<code id="codeBlock">
+import pandas as pd #graphs 
+import numpy as np 
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('nhldraft.csv')
+df.head()
+</code>
+    </pre>
+</div>
+
+<!-- OUTPUT BLOCK -->
+<div class="bg-black rounded-xl shadow mb-6">
+
+    <div class="bg-gray-900 text-gray-300 px-4 py-2 rounded-t-xl text-sm font-semibold">
+        output
+    </div>
+
+    <pre class="p-4 text-gray-100 overflow-x-auto text-sm">
+<code>
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>year</th>
+      <th>overall_pick</th>
+      <th>team</th>
+      <th>player</th>
+      <th>nationality</th>
+      <th>position</th>
+      <th>age</th>
+      <th>to_year</th>
+      <th>amateur_team</th>
+      <th>...</th>
+      <th>points</th>
+      <th>plus_minus</th>
+      <th>penalties_minutes</th>
+      <th>goalie_games_played</th>
+      <th>goalie_wins</th>
+      <th>goalie_losses</th>
+      <th>goalie_ties_overtime</th>
+      <th>save_percentage</th>
+      <th>goals_against_average</th>
+      <th>point_shares</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>2022</td>
+      <td>1</td>
+      <td>Montreal Canadiens</td>
+      <td>Juraj Slafkovsky</td>
+      <td>SK</td>
+      <td>LW</td>
+      <td>18.0</td>
+      <td>NaN</td>
+      <td>TPS (Finland)</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2</td>
+      <td>2022</td>
+      <td>2</td>
+      <td>New Jersey Devils</td>
+      <td>Simon Nemec</td>
+      <td>SK</td>
+      <td>D</td>
+      <td>18.0</td>
+      <td>NaN</td>
+      <td>HK Nitra (Slovakia)</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3</td>
+      <td>2022</td>
+      <td>3</td>
+      <td>Arizona Coyotes</td>
+      <td>Logan Cooley</td>
+      <td>US</td>
+      <td>C</td>
+      <td>18.0</td>
+      <td>NaN</td>
+      <td>USA U-18 Development Team (USDP/USHL)</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>4</td>
+      <td>2022</td>
+      <td>4</td>
+      <td>Seattle Kraken</td>
+      <td>Shane Wright</td>
+      <td>CA</td>
+      <td>C</td>
+      <td>18.0</td>
+      <td>NaN</td>
+      <td>Kingston Frontenacs (OHL)</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5</td>
+      <td>2022</td>
+      <td>5</td>
+      <td>Philadelphia Flyers</td>
+      <td>Cutter Gauthier</td>
+      <td>SE</td>
+      <td>LW</td>
+      <td>18.0</td>
+      <td>NaN</td>
+      <td>USA U-18 Development Team (USDP/USHL)</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 23 columns</p>
+</div>
+</code>
+    </pre>
+</div>
+    <h1 class="text-xl font-bold text-pink-400">
+        Players drafted by age
+    </h1>
+<!-- CODE BLOCK -->
+<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
+
+    <!-- HEADER -->
+    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+        <span>python</span>
+
+        <!-- COPY BUTTON -->
+        <button 
+            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
+            class="text-gray-300 hover:text-white text-xs">
+            Copy
+        </button>
+    </div>
+
+    
+
+<!-- CODE -->
+<pre class="p-4 text-gray-200 overflow-x-auto text-sm">
+<code id="codeBlock">
+ax=df['age'].plot(kind='hist',ylabel='Q',xlabel='age',bins=20,color='pink',title='PLAYERS DRAFT AGE')
+
+#axis name change
+
+ticks = np.arange(df['age'].min(), df['age'].max()+1,2)
+ax.set_xticks(ticks)
+
+</code>
+    </pre>
+</div>
+<img src="playersdraftage.png" class="rounded-xl shadow">
+
+    <p class="text-black-700 leading-relaxed">
+        As expected, most of these guys are 18 years old. You can also see that a few players were younger than 18 — these correspond to the years 1955–1967, before the Junior Hockey regulations changed to set the age range to 18–20 for Canadian and American players, and 18–21 for international players. You can read more about this <a href="https://en.wikipedia.org/wiki/NHL_entry_draft#History" 
+           class="text-blue-600 underline" 
+           target="_blank">here</a>.
+
+    <h1 class="text-xl font-bold text-pink-400">
+        Teams with less and most players drafted.
+    </h1>
+<!-- CODE BLOCK -->
+<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
+
+    <!-- HEADER -->
+    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+        <span>python</span>
+
+        <!-- COPY BUTTON -->
+        <button 
+            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
+            class="text-gray-300 hover:text-white text-xs">
+            Copy
+        </button>
+    </div>
+
+    <!-- CODE -->
+    <pre class="p-4 text-gray-200 overflow-x-auto text-sm">
+<code id="codeBlock">
+# less
+df['team'].value_counts().nsmallest(15).plot(kind='barh',figsize=(10,10),title='TEAMS WITH LESS PLAYERS DRAFTED',color='pink')
+
+# most
+df['team'].value_counts().nlargest(6).plot(kind='barh',figsize=(10,10),color='pink',title='TEAMS WITH MORE PLAYERS DRAFTED')
+</code>
+    </pre>
+</div>
+<img src="lessplayersdrafted.png" class="rounded-xl shadow">
+    <p class="text-black-700 leading-relaxed">
+        Still not a very surprising result — the teams that drafted the fewest players are the newest franchises (such as the Kraken, the Vegas Golden Knights, and the Minnesota Wild), as well as teams whose franchises are no longer active.<p></p>
+
+<img src="mostplayersdrafted.png" class="rounded-xl shadow">
+<p class="text-black-700 leading-relaxed">
+    Here, I purposely created a Top 6 to see whether all the <a href="https://en.wikipedia.org/wiki/Original_Six" 
+           class="text-blue-600 underline" 
+           target="_blank">"Original 6"</a> teams would appear — but surprisingly, they didn’t. The Leafs barely made the list, and the Flyers ended up taking the Bruins’ spot instead. 
+    <p>The Flyers ranking so high reflects their drafting approach during the 80s and 90s, where they accumulated more mid-round picks than most Original Six teams. Of course, drafting many players doesn’t necessarily mean drafting successful players.</p><p> The gap between the Leafs and the top teams is also smaller than expected, showing how consistent their draft activity has been across decades despite mixed on-ice results.
+</p>
+
+
+
+
+<!-- SMALL JS FOR COPY BUTTON -->
+<script>
+const codeBlock = document.getElementById("codeBlock");
+</script>
+
+
+</div>
+
+</body>
+</html>

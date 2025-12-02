@@ -1,72 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <title>Leafs Insight</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NHL history analysis — Clean</title>
+
+  <!-- SEO / Open Graph -->
+  <meta name="description" content="NHL draft data analysis (1963–2022) with Python, pandas and matplotlib. Insights, visualizations, and trends across decades." />
+  <meta name="keywords" content="NHL analysis, NHL draft, hockey statistics, data science, pandas, matplotlib, sports analytics" />
+  <meta name="author" content="Camila Nohara Arakaki" />
+  <meta property="og:title" content="NHL History Data Analysis (1963–2022)" />
+  <meta property="og:description" content="Visual analysis of NHL draft data using Python, including PPG leaders, goalie performance, team drafting history, and more." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="mcdavid.png" />
+  <meta property="og:url" content="YOUR_URL_HERE" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Smooth scrolling */
+    html { scroll-behavior: smooth; }
+
+    /* Small tweaks beyond Tailwind */
+    pre { white-space: pre; }
+    .toc a{ text-decoration: none; }
+
+    /* Fade-in animation for sections */
+    .fade-in { opacity: 0; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* Soft dark-gray theme variables (used when .dark-mode applied) */
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --muted: #374151;
+      --accent: #ec4899; /* pink-400 */
+      --link: #2563eb; /* blue-600 */
+      --code: #111827;
+    }
+    .dark-mode {
+      --bg: #0f1722;      /* our soft dark base */
+      --card: #0b1220;    /* slightly lighter card */
+      --muted: #cbd5e1;
+      --accent: #f472b6;  /* softer pink on dark */
+      --link: #93c5fd;    /* light blue */
+      --code: #e6eef8;
+    }
+
+    /* Use variables to override colors for non-Tailwind parts */
+    body { background: var(--bg); color: var(--muted); }
+    .card { background: var(--card); }
+    .accent { color: var(--accent); }
+    a { color: var(--link); }
+
+    /* Sticky TOC on wide screens */
+    @media (min-width: 768px) {
+    .toc-card { position: static; }
+    }
+
+    /* Back-to-top button */
+    #backToTop { transition: opacity .2s ease, transform .2s ease; opacity: 0; transform: translateY(12px); }
+    #backToTop.show { opacity: 1; transform: translateY(0); }
+
+    /* Small responsive text tweak for very small devices */
+    @media (max-width:420px){ html { font-size: 17px; } }
+  </style>
 </head>
 
-<body class="bg-gray-100">
+<body class="antialiased" id="body">
 
-<div class="max-w-3xl mx-auto mt-10 bg-white p-8 rounded-xl shadow space-y-6">
+  <!-- Header -->
+  <header class="max-w-4xl mx-auto p-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="inline-block text-sm px-3 py-2 bg-pink-400 text-white rounded-md shadow">← Back</a>
 
-    <h1 class="text-3xl font-bold">
-        NHL Analysis (1963 - 2022)
-    </h1>
+      <!-- Last edited button -->
+      <button id="lastEditedBtn" aria-expanded="false"
+        class="inline-block text-sm px-3 py-2 bg-gray-700 text-white rounded-md shadow hover:bg-gray-800">Last edited</button>
 
-    <img src="mcdavid.png" class="rounded-xl shadow">
-
-    <p class="text-gray-700 leading-relaxed">
-        This is my very first project using pandas and matplotlib altogether.
-        In this entry, I will show some analytics I made with 
-        <a href="https://www.kaggle.com/datasets/mattop/nhl-draft-hockey-player-data-1963-2022" 
-           class="text-blue-600 underline" 
-           target="_blank">this</a> database.
-        Shoutout to OP for the dataset!
-    </p>
-
-    <h1 class="text-xl font-bold text-pink-400">
-        Import the libraries and .csv file
-    </h1>
-    
-<!-- CODE BLOCK -->
-<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
-
-    <!-- HEADER -->
-    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
-        <span>python</span>
-
-        <!-- COPY BUTTON -->
-        <button 
-            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
-            class="text-gray-300 hover:text-white text-xs">
-            Copy
-        </button>
+      <!-- Reading time display (auto) -->
+      <div id="readingTime" class="text-xs text-gray-500 ml-2 hidden sm:inline-block">—</div>
     </div>
 
-    <!-- CODE -->
-    <pre class="p-4 text-gray-200 overflow-x-auto text-sm">
-<code id="codeBlock">
-import pandas as pd #graphs 
+    <div class="flex items-center gap-2">
+      <!-- Theme toggle -->
+      <button id="themeToggle"
+              class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md shadow bg-gray-100 hover:bg-gray-200"
+              aria-label="Toggle theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="text-xs">Theme</span>
+      </button>
+
+      
+
+    </div>
+  </header>
+
+  <!-- Main content area (keeps your content exactly) -->
+  <main class="max-w-3xl mx-auto card p-6 rounded-xl shadow mb-12">
+
+    <!-- Hero / Title (exact content preserved) -->
+    <section class="mb-6 fade-in">
+      <h1 class="text-3xl font-bold" data-en="NHL Analysis (1963 - 2022)">NHL Analysis (1963 - 2022)</h1>
+
+      <img src="mcdavid.png" alt="McDavid" class="rounded-xl shadow mt-4 w-full h-auto object-cover" />
+
+      <p class="mt-4 leading-relaxed">This is my very first project using pandas and matplotlib altogether.
+        In this entry, I will show some analytics I made with 
+        <a href="https://www.kaggle.com/datasets/mattop/nhl-draft-hockey-player-data-1963-2022" class="text-blue-600 underline" target="_blank">this</a> database.
+        Shoutout to OP for the dataset!</p>
+    </section>
+
+    <!-- Sticky / collapsible TOC -->
+    <aside id="tocCard" class="toc-card bg-gray-50 p-4 rounded-lg mb-6">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold mb-2">Contents</h3>
+      </div>
+      <nav class="toc">
+        <ul id="tocList" class="space-y-1 text-sm"></ul>
+      </nav>
+    </aside>
+
+    <!-- Import -->
+    <section id="import" class="prose mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Import the libraries and .csv file">Import the libraries and .csv file</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow mb-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>import pandas as pd 
 import numpy as np 
 import matplotlib.pyplot as plt
 
 df = pd.read_csv('nhldraft.csv')
-df.head()
-</code>
-    </pre>
-</div>
+df.head()</code></pre>
+      </div>
 
-<!-- OUTPUT BLOCK -->
-<div class="bg-black rounded-xl shadow mb-6">
-
-    <div class="bg-gray-900 text-gray-300 px-4 py-2 rounded-t-xl text-sm font-semibold">
-        output
-    </div>
-
-    <pre class="p-4 text-gray-100 overflow-x-auto text-sm">
-<code>
-<div>
+      <div class="bg-black rounded-xl shadow mb-6 p-4 text-sm text-gray-100 overflow-auto">
+<code><div>
 <style scoped>
     .dataframe tbody tr th:only-of-type {
         vertical-align: middle;
@@ -132,200 +206,437 @@ df.head()
       <td>NaN</td>
       <td>NaN</td>
     </tr>
-    <tr>
-      <th>1</th>
-      <td>2</td>
-      <td>2022</td>
-      <td>2</td>
-      <td>New Jersey Devils</td>
-      <td>Simon Nemec</td>
-      <td>SK</td>
-      <td>D</td>
-      <td>18.0</td>
-      <td>NaN</td>
-      <td>HK Nitra (Slovakia)</td>
-      <td>...</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>3</td>
-      <td>2022</td>
-      <td>3</td>
-      <td>Arizona Coyotes</td>
-      <td>Logan Cooley</td>
-      <td>US</td>
-      <td>C</td>
-      <td>18.0</td>
-      <td>NaN</td>
-      <td>USA U-18 Development Team (USDP/USHL)</td>
-      <td>...</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>4</td>
-      <td>2022</td>
-      <td>4</td>
-      <td>Seattle Kraken</td>
-      <td>Shane Wright</td>
-      <td>CA</td>
-      <td>C</td>
-      <td>18.0</td>
-      <td>NaN</td>
-      <td>Kingston Frontenacs (OHL)</td>
-      <td>...</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>5</td>
-      <td>2022</td>
-      <td>5</td>
-      <td>Philadelphia Flyers</td>
-      <td>Cutter Gauthier</td>
-      <td>SE</td>
-      <td>LW</td>
-      <td>18.0</td>
-      <td>NaN</td>
-      <td>USA U-18 Development Team (USDP/USHL)</td>
-      <td>...</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-    </tr>
   </tbody>
 </table>
 <p>5 rows × 23 columns</p>
-</div>
-</code>
-    </pre>
-</div>
-    <h1 class="text-xl font-bold text-pink-400">
-        Players drafted by age
-    </h1>
-<!-- CODE BLOCK -->
-<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
+</div></code>
+      </div>
+    </section>
 
-    <!-- HEADER -->
-    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
-        <span>python</span>
+    <!-- Players drafted by age -->
+    <section id="age" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Players drafted by age">Players drafted by age</h2>
 
-        <!-- COPY BUTTON -->
-        <button 
-            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
-            class="text-gray-300 hover:text-white text-xs">
-            Copy
-        </button>
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>ax=df['age'].plot(kind='hist',ylabel='Q',xlabel='age',bins=20,color='pink',title='PLAYERS DRAFT AGE')
+
+#-- axis name change --
+
+ticks = np.arange(df['age'].min(), df['age'].max()+1,2)
+ax.set_xticks(ticks)</code></pre>
+      </div>
+
+      <img src="playersdraftage.png" alt="players draft age" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 1] Bar chart of players draft age</p>
+
+      <p class="text-black-700 leading-relaxed mt-3">As expected, most of these guys are 18 years old. You can also see that a few players were younger than 18 - these correspond to the years 1955-1967, before the Junior Hockey regulations changed to set the age range to 18-20 for Canadian and American players, and 18–21 for international players. You can read more about this <a href="https://en.wikipedia.org/wiki/NHL_entry_draft#History" class="text-blue-600 underline" target="_blank">here</a>.</p>
+    </section>
+
+    <!-- Teams with less and most players drafted -->
+    <section id="teams" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Teams with less and most players drafted.">Teams with less and most players drafted.</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#-- less --
+df['team'].value_counts().nsmallest(15).plot(kind='barh',figsize=(10,10),title='TEAMS WITH LESS PLAYERS DRAFTED',color='pink')
+
+#-- most --
+df['team'].value_counts().nlargest(6).plot(kind='barh',figsize=(10,10),color='pink',title='TEAMS WITH MORE PLAYERS DRAFTED')</code></pre>
+      </div>
+
+      <img src="lessplayersdrafted.png" alt="teams less drafted" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 2] Bar char of teams with less players drafted</p>
+
+      <p class="text-black-700 leading-relaxed mt-3">Still not a very surprising result — the teams that drafted the fewest players are the newest franchises (such as the Kraken, the Vegas Golden Knights, and the Minnesota Wild), as well as teams whose franchises are no longer active.</p>
+
+      <img src="mostplayersdrafted.png" alt="teams most drafted" class="rounded-xl shadow w-full h-auto mt-4">
+      <p class="text-xs text-center mt-2">[GRAPH 3] Bar char of teams with more players drafted</p>
+
+      <p class="text-black-700 leading-relaxed mt-3">Here, I purposely created a Top 6 to see whether all the <a href="https://en.wikipedia.org/wiki/Original_Six" class="text-blue-600 underline" target="_blank">"Original Six"</a> teams would appear - but surprisingly, they didn’t. The Leafs barely made the list, and the Flyers ended up taking the Bruins’ spot instead. 
+      <p>The Flyers ranking so high reflects their drafting approach during the 80s and 90s, where they accumulated more mid-round picks than most Original Six teams. Of course, drafting many players doesn’t necessarily mean drafting successful players.</p><p> The gap between the Leafs and the top teams is also smaller than expected, showing how consistent their draft activity has been across decades despite mixed on-ice results.
+</p></p>
+    </section>
+
+    <!-- Overall picks analysis -->
+    <section id="overall" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Overall picks analysis">Overall picks analysis</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#-- top 5 countries with drafted players--
+df['nationality'].value_counts().nlargest(5).plot.pie(autopct='%1.1f%%',figsize=(10,10),title='Top 5 countries with more players drafted')
+
+#-- Q of players drafted per year --
+ax=df['year'].plot(kind='hist',bins=20,figsize=(15,6),color='pink',title='Players drafted per year')
+
+#-- top drafted positions --
+players= df[df["position"].notna()].copy()
+positions = players["position"].value_counts()</code></pre>
+      </div>
+
+      <img src="Topcountries.png" alt="top countries" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 4] Top 5 countries with more players drafted</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">Of course, Canada is the country with most players drafted. Followed by the United States, we can see that Sweden has more players than Russia. This could be because of the development of the KHL (Russian profesional Hockey League developed in the 200's). Meanwhile, Finland takes fifth place.</p>
+
+      <img src="playersForYear.png" alt="players per year" class="rounded-xl shadow w-full h-auto mt-4">
+      <p class="text-xs text-center mt-2">[GRAPH 5] Playeres drafted per year (1963 - 2022)</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">In the 1990s, the number of players drafted increased exponentially until it dropped in 2006–2007. This happened because the number of draft rounds decreased from 9 to 7.</p>
+
+      <img src="draftedpositions.png" alt="drafted positions" class="rounded-xl shadow w-full h-auto mt-4">
+      <p class="text-xs text-center mt-2">[GRAPH 6] Pie chart of drafted positions</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">Not so many surprises here. The fowards takes 56.8% in total.</p>
+    </section>
+
+    <!-- Bivariate analysis -->
+    <section id="bivariate" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Bivariate analysis of overall picks vs games played">Bivariate analysis of overall picks vs games played</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#--overall picks vs q games played--
+
+plt.figure(figsize=(10,6))
+
+plt.scatter(df['overall_pick'], df['games_played'], alpha=0.5, edgecolors='black')
+
+plt.xlabel('OVERALL NUMBER PICK')
+plt.ylabel('Q GAMES PLAYED')
+plt.title('DRAFT POSITION AND GAMES PLAYED')
+
+plt.grid(True, alpha=0.4)
+
+plt.show()</code></pre>
+      </div>
+
+      <img src="draftpositionsvsgamesplayed.png" alt="draft vs games" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 7] Bivariate scatter plot of draft position and games played</p>
+
+      <div class="mt-3 text-black-200 leading-relaxed">The scatter plot illustrates the negative correlation between a player's selection order in the draft and their career longevity, measured by the number of Games Played. 
+
+     <div class="mt-3 text-black-200 leading-relaxed"></div>Players selected in the top 50 positions demonstrate a highest probability of a long professional career. While a 500 game career marks a long stay in the league, the graph shows that players drafted in these early rounds have the greatest potential, with a significant number reaching or exceeding the 1000 game milestone.
+
+    <div class="mt-3 text-black-200 leading-relaxed"></div>For all the other drafted players, the probability of achieving a career near 1000 games decreases sharply. The highest density of data points for these lower picks is clustered near the 500 games, showing that most of them don't achieve a long career.
+
+    <div class="mt-3 text-black-200 leading-relaxed"></div>The outliers are the players with a career trajectory greater than 1200 for higher picks and the ones who draft low and get to play more than 700 games. 
+    <div class="mt-3 text-black-200 leading-relaxed"></div>Overall, approximately 400 players in NHL history have played more than 1000 games. You can read more <a href="https://en.wikipedia.org/wiki/List_of_NHL_players_with_1,000_games_played#1,500_or_more_games_played" class="text-blue-600 underline" target="_blank">here</a>.</div>
+    </section>
+
+    <!-- Top 10 PPG -->
+    <section id="ppg" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Top 10 players with more PPG.">Top 10 players with more PPG.</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#-- top 10 players with more points per game--
+df['points_per_game'] = df['points'] / df['games_played']
+
+#filter
+min_games = 200
+df0 = df[(df['overall_pick'] <= 50) & (df['games_played'] >= min_games)]
+
+#label year and draft
+df0['label'] = df0['player'] + "(Draft " + df0["year"].astype(str) + ", " + df0['overall_pick'].astype(str) + " pick" + ")"
+
+#graph
+ax=df0.set_index('label')['points_per_game'].nlargest(10).plot(kind='barh',figsize=(12,6),xlabel='points',ylabel='player',color='pink',title='TOP 10 PLAYERS WITH MORE POINTS PER GAME (1963 - 2022)')
+</code></pre>
+      </div>
+
+      <img src="pointspergame.png" alt="points per game" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 8] Bar char of the players with most points per game.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">Following the previous analysis, we can see that most of the players featured here were drafted within the top 50 picks. Highly successful players tend to average at least 1 point per game. Additionally, Crosby and McDavid are the only active players in the top, while the rest are already retired. Both Crosby and McDavid continue to increase their scoring totals, which may further solidify their positions over time.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">I had to filter some outliers with players that played only a few games and achived points in those. For example, John English played just one NHL game and registered a point, which would have placed him among the top scorers.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3"><b><u>Note:</b></u> Wayne Gretzky (Aprox. 1.92 PPG) is not included because he was never drafted. Hense, he doesn't appear in the draft-based dataset used for this analysis.</p>
+    </section>
+
+    <!-- Goalies -->
+    <section id="goalies" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Goalies: Win vs losses">Goalies: Win vs losses</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#not goalies out
+goalies = df[df['save_percentage'].notna()] 
+
+plt.figure(figsize=(10,6))
+
+sc = plt.scatter(goalies['goalie_losses'],goalies['goalie_wins'],c=goalies['save_percentage'],cmap='viridis',edgecolors='black',alpha=0.8)
+
+plt.colorbar(sc, label='Save Percentage') 
+plt.xlabel('Losses')
+plt.ylabel('Wins')
+plt.title('Goalies: Wins vs Losses')
+
+plt.show()</code></pre>
+      </div>
+
+      <img src="goalies.png" alt="goalies" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 9] Colorbar map of wins and losses of goalies</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">There is a positive relationship between wins and losses, mostly driven by how long each goalie played. High save percentages are associated with some of the top-performing goalies, but even goalies with strong saving rates can accumulate losses simply due to long careers. Most players stay in the low-win, low-loss region, indicating shorter NHL careers.</p>
+    </section>
+
+    <!-- Leafs -->
+    <section id="leafs" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-blue-600" data-en="A small insight into the Toronto Maple Leafs">A small insight into the Toronto Maple Leafs</h2>
+
+      <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>python</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#--insight for the leafs drafted players--
+
+leafs = df[df['team'] == 'Toronto Maple Leafs'].copy()
+team_yearly = leafs.groupby('year')['points'].sum()
+
+ax = team_yearly.plot(figsize=(12,6),marker="o",title='TORONTO MAPLE LEAFS – TOTAL POINTS MADE BY DRAFTED PLAYERS',grid=True,color='blue')</code></pre>
+      </div>
+
+      <img src="leafs.png" alt="leafs" class="rounded-xl shadow w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 10] Leafs drafted players performance through the years.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">I wanted to make a breef insight into the team I root for, the Leafs. We can see that the leafs drafted good players between the 1960s and the 1980s. There is a clear peak around 1967 (The year of their last Stanley Cup) which reflects strong draft classes that produced long-term NHL contributors.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">However, from the late 1990s onward, total point production drops noticeably, suggesting a period of inconsistent drafting and a lack of elite talent development.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">By the 2000s, several draft classes produced few or no NHL-level players. This aligns with the fact that the Leafs frequently traded away draft picks or relied more heavily on acquiring established players rather than developing their own prospects. Following this, it would be valuable to analyze the <a href="https://en.wikipedia.org/wiki/Toronto_Marlies" class="text-blue-600 underline" target="_blank">Marlies'</a> performance during these years to understand how player development was affected.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">Overall, the data supports the narrative that Toronto’s drafting success has fluctuated significantly, with the franchise showing strong results in earlier decades and more modest outcomes in the modern era.</p>
+    </section>
+
+    <!-- Conclusion -->
+    <section id="conclusion" class="mb-6 fade-in">
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Conclusion and Next Steps">Conclusion and Next Steps</h2>
+
+      <p class="text-black-200 leading-relaxed mt-3">This was my first project using Pandas and Matplotlib, and it was a great learning experience. Exploring NHL history through data helped me understand several interesting patterns and irregularities of this sport I recently picked up. It made the process very enjoyable.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">I recently learned that many NHL game prediction models struggle to reach even 70% accuracy. With this in mind, my next goal is to begin developing my own predictive model for NHL games and continue expanding my skills in data analysis and machine learning.</p>
+
+      <p class="text-black-200 leading-relaxed mt-3">Thanks for reading! Let's go Leafs!</p>
+    </section>
+
+    <img src="nylander1.jpg" alt="leafs" class="rounded-xl shadow w-full h-auto">
+  </main>
+
+  <!-- Footer (keep your text) -->
+  <footer class="max-w-3xl mx-auto text-center text-xs text-gray-500 mb-10" id="pageFooter">02/12/2025 - Argentina ⋆. 𐙚 ˚ </footer>
+
+  <!-- Back to top floating button -->
+  <button id="backToTop" aria-label="Back to top"
+    class="fixed right-4 bottom-6 p-3 rounded-full shadow-lg bg-pink-400 text-white z-50 hidden">
+    ↑
+  </button>
+
+  <!-- Last edited modal -->
+  <div id="editedModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-60">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow max-w-sm text-center">
+      <p id="editedText" class="text-gray-700 dark:text-gray-200 mb-4">Last edited: —</p>
+      <button id="closeModal" class="px-3 py-2 bg-pink-400 text-white rounded-md hover:bg-pink-500">Close</button>
     </div>
+  </div>
+
+  <script>
+    /******************************
+     * Helper: safely query element
+     ******************************/
+    const $ = (sel, ctx = document) => ctx.querySelector(sel);
+
+    /******************************
+     * Fade-in when visible (IntersectionObserver)
+     ******************************/
+    (function fadeInOnScroll(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('visible');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+    })();
+
+    /******************************
+     * Build TOC from titles
+     ******************************/
+    (function buildTOC(){
+      const tocList = document.getElementById('tocList');
+      const titles = document.querySelectorAll('.section-title');
+      titles.forEach(title =>{
+        const text = title.getAttribute('data-en') || title.innerText;
+        const id = title.parentElement.id || text.toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/(^-|-$)/g,'');
+        title.parentElement.id = id;
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="#${id}" class="text-blue-600 hover:underline">${text}</a>`;
+        tocList.appendChild(li);
+      });
+    })();
+
+    /******************************
+     * Copy button handler for code blocks
+     ******************************/
+    document.addEventListener('click', e=>{
+      if(e.target.matches('.copy-btn')){
+        const container = e.target.closest('.code-container');
+        if(!container) return;
+        const code = container.querySelector('pre code');
+        if(!code) return;
+        navigator.clipboard.writeText(code.innerText).then(()=>{
+          const previous = e.target.innerText;
+          e.target.innerText = 'Copied';
+          setTimeout(()=> e.target.innerText = previous,1200);
+        }).catch(()=> alert('Copy failed — try selecting the code manually.'));
+      }
+    });
+
+    /******************************
+     * Reading time (estimated)
+     * Based on main content words
+     ******************************/
+    (function readingTime(){
+      const main = document.querySelector('main');
+      if(!main) return;
+      const text = main.innerText || '';
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const minutes = Math.max(1, Math.round(words / 200)); // 200 wpm
+      const el = document.getElementById('readingTime');
+      el.innerText = `Estimated reading time: ${minutes} min`;
+      el.classList.remove('hidden');
+    })();
+
+    /******************************
+     * Last edited modal (reads footer, fallback to document.lastModified)
+     ******************************/
+    (function lastEdited(){
+      const btn = document.getElementById('lastEditedBtn');
+      const modal = document.getElementById('editedModal');
+      const close = document.getElementById('closeModal');
+      const text = document.getElementById('editedText');
+
+      function getFooterText(){
+        const foot = document.getElementById('pageFooter');
+        if(foot && foot.innerText.trim()) return foot.innerText.trim();
+        return document.lastModified || 'Unknown';
+      }
+
+      btn.addEventListener('click', ()=>{
+        text.innerText = 'Last edited: ' + getFooterText();
+        modal.classList.remove('hidden');
+        btn.setAttribute('aria-expanded','true');
+      });
+
+      close.addEventListener('click', ()=> {
+        modal.classList.add('hidden');
+        btn.setAttribute('aria-expanded','false');
+      });
+
+      modal.addEventListener('click', (e)=> {
+        if(e.target === modal){
+          modal.classList.add('hidden');
+          btn.setAttribute('aria-expanded','false');
+        }
+      });
+    })();
+
+    /******************************
+     * Back to top button behaviour
+     ******************************/
+    (function backToTop(){
+      const btn = document.getElementById('backToTop');
+      window.addEventListener('scroll', ()=>{
+        if(window.scrollY > 240) {
+          btn.classList.add('show');
+          btn.classList.remove('hidden');
+        } else {
+          btn.classList.remove('show');
+          btn.classList.add('hidden');
+        }
+      });
+      btn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+    })();
 
     
 
-<!-- CODE -->
-<pre class="p-4 text-gray-200 overflow-x-auto text-sm">
-<code id="codeBlock">
-ax=df['age'].plot(kind='hist',ylabel='Q',xlabel='age',bins=20,color='pink',title='PLAYERS DRAFT AGE')
+    /******************************
+     * Theme toggle (soft dark-gray)
+     * Default: match system preference (auto)
+     ******************************/
+    (function themeToggle(){
+      const body = document.getElementById('body');
+      const toggle = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
 
-#axis name change
+      // check saved preference
+      const saved = localStorage.getItem('nhl_theme'); // 'light'|'dark'|null
 
-ticks = np.arange(df['age'].min(), df['age'].max()+1,2)
-ax.set_xticks(ticks)
+      // utility to apply mode
+      function applyMode(mode){
+        if(mode === 'dark'){
+          body.classList.add('dark-mode');
+          body.classList.remove('light-mode');
+          icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#e6eef8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        } else {
+          body.classList.remove('dark-mode');
+          body.classList.add('light-mode');
+          icon.innerHTML = '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>';
+        }
+      }
 
-</code>
-    </pre>
-</div>
-<img src="playersdraftage.png" class="rounded-xl shadow">
+      // initial: system preference unless saved
+      if(saved === 'light') applyMode('light');
+      else if(saved === 'dark') applyMode('dark');
+      else {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyMode(prefersDark ? 'dark' : 'light');
+      }
 
-    <p class="text-black-700 leading-relaxed">
-        As expected, most of these guys are 18 years old. You can also see that a few players were younger than 18 — these correspond to the years 1955–1967, before the Junior Hockey regulations changed to set the age range to 18–20 for Canadian and American players, and 18–21 for international players. You can read more about this <a href="https://en.wikipedia.org/wiki/NHL_entry_draft#History" 
-           class="text-blue-600 underline" 
-           target="_blank">here</a>.
+      // toggle on click
+      toggle.addEventListener('click', ()=>{
+        const isDark = body.classList.contains('dark-mode');
+        const next = isDark ? 'light' : 'dark';
+        applyMode(next);
+        localStorage.setItem('nhl_theme', next);
+      });
+    })();
 
-    <h1 class="text-xl font-bold text-pink-400">
-        Teams with less and most players drafted.
-    </h1>
-<!-- CODE BLOCK -->
-<div class="bg-gray-800 rounded-xl shadow mb-7 relative">
+    /******************************
+     * Initialize small accessibility details
+     ******************************/
+    (function initAccess(){
+      // ensure code blocks visible in dark-mode
+      document.querySelectorAll('.code-container pre').forEach(pre=>{
+        pre.style.background = 'transparent';
+      });
+    })();
 
-    <!-- HEADER -->
-    <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
-        <span>python</span>
-
-        <!-- COPY BUTTON -->
-        <button 
-            onclick="navigator.clipboard.writeText(codeBlock.innerText)" 
-            class="text-gray-300 hover:text-white text-xs">
-            Copy
-        </button>
-    </div>
-
-    <!-- CODE -->
-    <pre class="p-4 text-gray-200 overflow-x-auto text-sm">
-<code id="codeBlock">
-# less
-df['team'].value_counts().nsmallest(15).plot(kind='barh',figsize=(10,10),title='TEAMS WITH LESS PLAYERS DRAFTED',color='pink')
-
-# most
-df['team'].value_counts().nlargest(6).plot(kind='barh',figsize=(10,10),color='pink',title='TEAMS WITH MORE PLAYERS DRAFTED')
-</code>
-    </pre>
-</div>
-<img src="lessplayersdrafted.png" class="rounded-xl shadow">
-    <p class="text-black-700 leading-relaxed">
-        Still not a very surprising result — the teams that drafted the fewest players are the newest franchises (such as the Kraken, the Vegas Golden Knights, and the Minnesota Wild), as well as teams whose franchises are no longer active.<p></p>
-
-<img src="mostplayersdrafted.png" class="rounded-xl shadow">
-<p class="text-black-700 leading-relaxed">
-    Here, I purposely created a Top 6 to see whether all the <a href="https://en.wikipedia.org/wiki/Original_Six" 
-           class="text-blue-600 underline" 
-           target="_blank">"Original 6"</a> teams would appear — but surprisingly, they didn’t. The Leafs barely made the list, and the Flyers ended up taking the Bruins’ spot instead. 
-    <p>The Flyers ranking so high reflects their drafting approach during the 80s and 90s, where they accumulated more mid-round picks than most Original Six teams. Of course, drafting many players doesn’t necessarily mean drafting successful players.</p><p> The gap between the Leafs and the top teams is also smaller than expected, showing how consistent their draft activity has been across decades despite mixed on-ice results.
-</p>
-
-
-
-
-<!-- SMALL JS FOR COPY BUTTON -->
-<script>
-const codeBlock = document.getElementById("codeBlock");
-</script>
-
-
-</div>
+  </script>
 
 </body>
 </html>

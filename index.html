@@ -52,29 +52,141 @@
             </p>
         </section>
 
-        <!-- Project Card -->
-        <a href="nhlinsight.html" class="card-link">
-            <div class="card p-5 sm:p-6 rounded-2xl shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
-                <h2 class="text-lg sm:text-xl font-bold">NHL Analysis (1963 - 2022)</h2>
+<!-- FILTERS -->
+<div class="mb-6 flex items-center justify-between gap-3">
+    <input id="searchBar" type="text"
+           placeholder="Search projects..."
+           class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-card text-sm">
 
-                <p class="muted mt-2 text-sm sm:text-base leading-relaxed">
-                    Using a Draft Hockey Player Database, I made a little analysis
-                    of the performance of the players.
-                </p>
+    <select id="sortSelect"
+            class="px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-card text-sm">
+        <option value="new">Newest</option>
+        <option value="old">Oldest</option>
+    </select>
+</div>
 
-                <p class="accent font-medium text-sm sm:text-base mt-1">
-                    Pandas · Matplotlib · Analytics
-                </p>
+<!-- PROJECTS LIST -->
+<div id="projects" class="flex flex-col gap-6">
 
-                <!-- date -->
-                <p id="nhlDate" class="text-xs text-gray-500 mt-2"></p>
+    <!-- DB Cleaner (newest) -->
+    <a href="dbcleaner.html" class="card-link project-item"
+       data-title="data quality reporter cleaner"
+       data-date="2025-12-10">
 
-                <p class="text-blue-600 font-semibold mt-4 text-sm sm:text-base">Read →</p>
-            </div>
-        </a>
+        <div class="card p-5 sm:p-6 rounded-2xl shadow hover:shadow-lg hover:-translate-y-1 transition">
+            <h2 class="text-lg sm:text-xl font-bold">DATA QUALITY REPORTER AND CLEANER</h2>
+
+            <p class="muted mt-2 text-sm sm:text-base leading-relaxed">
+                A web-based tool that automates the cleaning and preprocessing of your .csv database.
+            </p>
+
+            <p class="accent font-medium text-sm sm:text-base mt-1">
+                Pandas · Streamlit · Numpy
+            </p>
+
+            <p class="text-xs text-gray-500 mt-2">Written on: 10-12-2025</p>
+        </div>
+    </a>
+
+    <!-- NHL Analysis -->
+    <a href="nhlinsight.html" class="card-link project-item"
+       data-title="nhl analysis hockey"
+       data-date="2025-12-03">
+
+        <div class="card p-5 sm:p-6 rounded-2xl shadow hover:shadow-lg hover:-translate-y-1 transition">
+            <h2 class="text-lg sm:text-xl font-bold">NHL Analysis (1963 - 2022)</h2>
+
+            <p class="muted mt-2 text-sm sm:text-base leading-relaxed">
+                Using a Draft Hockey Player Database, I made a little analysis of the players.
+            </p>
+
+            <p class="accent font-medium text-sm sm:text-base mt-1">
+                Pandas · Matplotlib · Analytics
+            </p>
+
+            <p class="text-xs text-gray-500 mt-2">Written on: 03-12-2025</p>
+        </div>
+    </a>
+
+    </div>
+    <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    /************* Theme toggle (lo tuyo pero adentro del DOMContentLoaded) *************/
+    const body = document.getElementById('body');
+    const toggle = document.getElementById('themeToggle');
+    const icon = document.getElementById('themeIcon');
+    const saved = localStorage.getItem('portfolio_theme');
+
+    function applyMode(mode){
+        if(mode === 'dark'){
+            body.classList.add('dark-mode');
+            icon.innerHTML =
+              '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        } else {
+            body.classList.remove('dark-mode');
+            icon.innerHTML =
+              '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>';
+        }
+    }
+
+    if(saved){
+        applyMode(saved);
+    } else {
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyMode(systemDark ? 'dark' : 'light');
+    }
+
+    toggle.addEventListener('click', ()=>{
+        const next = body.classList.contains('dark-mode') ? 'light' : 'dark';
+        applyMode(next);
+        localStorage.setItem('portfolio_theme', next);
+    });
+
+
+    /************* SEARCH + SORT (100% working) *************/
+    const searchBar = document.getElementById("searchBar");
+    const sortSelect = document.getElementById("sortSelect");
+    const container = document.getElementById("projects");
+
+    function getProjects() {
+        return Array.from(container.querySelectorAll(".project-item"));
+    }
+
+    function updateProjects() {
+        const query = searchBar.value.toLowerCase();
+        const mode = sortSelect.value;
+
+        let items = getProjects();
+
+        // Filter
+        items = items.filter(item =>
+            item.dataset.title.toLowerCase().includes(query)
+        );
+
+        // Sort
+        items.sort((a, b) => {
+            const da = new Date(a.dataset.date);
+            const db = new Date(b.dataset.date);
+            return mode === "new" ? db - da : da - db;
+        });
+
+        // Re-render
+        container.innerHTML = "";
+        items.forEach(item => container.appendChild(item));
+    }
+
+    searchBar.addEventListener("input", updateProjects);
+    sortSelect.addEventListener("change", updateProjects);
+
+    updateProjects(); // initial render
+});
+</script>
+
+        
 
     </main>
-
+    
     <!-- Theme Toggle -->
     <div class="mt-8 mb-10 flex justify-center">
         <button id="themeToggle"
@@ -87,45 +199,7 @@
         </button>
     </div>
 
-    <script>
-        /************* Theme toggle *************/
-        const body = document.getElementById('body');
-        const toggle = document.getElementById('themeToggle');
-        const icon = document.getElementById('themeIcon');
 
-        const saved = localStorage.getItem('portfolio_theme');
 
-        function applyMode(mode){
-            if(mode === 'dark'){
-                body.classList.add('dark-mode');
-                icon.innerHTML =
-                  '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#f1f5f9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
-            } else {
-                body.classList.remove('dark-mode');
-                icon.innerHTML =
-                  '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>';
-            }
-        }
 
-        if(saved){
-            applyMode(saved);
-        } else {
-            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            applyMode(systemDark ? 'dark' : 'light');
-        }
-
-        toggle.addEventListener('click', ()=>{
-            const next = body.classList.contains('dark-mode') ? 'light' : 'dark';
-            applyMode(next);
-            localStorage.setItem('portfolio_theme', next);
-        });
-
-        /************* NHL card date (today) *************/
-        const today = new Date().toLocaleDateString('en-US', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
-        document.getElementById('nhlDate').innerText = "Written on: " + today;
-    </script>
-
-</body>
 </html>

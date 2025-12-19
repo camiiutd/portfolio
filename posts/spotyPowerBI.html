@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NHL history analysis — Clean</title>
+
+  <!-- SEO / Open Graph -->
+  <meta name="description" content="NHL draft data analysis (1963–2022) with Python, pandas and matplotlib. Insights, visualizations, and trends across decades." />
+  <meta name="keywords" content="NHL analysis, NHL draft, hockey statistics, data science, pandas, matplotlib, sports analytics" />
+  <meta name="author" content="Camila Nohara Arakaki" />
+  <meta property="og:title" content="NHL History Data Analysis (1963–2022)" />
+  <meta property="og:description" content="Visual analysis of NHL draft data using Python, including PPG leaders, goalie performance, team drafting history, and more." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="mcdavid.png" />
+  <meta property="og:url" content="https://camiiutd.github.io/portfolio/posts/nhlinsight.html" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* Smooth scrolling */
+    html { scroll-behavior: smooth; }
+
+    /* Small tweaks beyond Tailwind */
+    pre { white-space: pre; }
+    .toc a{ text-decoration: none; }
+
+    /* Fade-in animation for sections */
+    .fade-in { opacity: 0; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* Soft dark-gray theme variables (used when .dark-mode applied) */
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --muted: #374151;
+      --accent: #ec4899; /* pink-400 */
+      --link: #2563eb; /* blue-600 */
+      --code: #111827;
+    }
+    .dark-mode {
+      --bg: #0f1722;      /* our soft dark base */
+      --card: #0b1220;    /* slightly lighter card */
+      --muted: #cbd5e1;
+      --accent: #f472b6;  /* softer pink on dark */
+      --link: #93c5fd;    /* light blue */
+      --code: #e6eef8;
+    }
+
+    /* Use variables to override colors for non-Tailwind parts */
+    body { background: var(--bg); color: var(--muted); }
+    .card { background: var(--card); }
+    .accent { color: var(--accent); }
+    a { color: var(--link); }
+
+    /* Sticky TOC on wide screens */
+    @media (min-width: 768px) {
+    .toc-card { position: static; }
+    }
+
+    /* Back-to-top button */
+    #backToTop { transition: opacity .2s ease, transform .2s ease; opacity: 0; transform: translateY(12px); }
+    #backToTop.show { opacity: 1; transform: translateY(0); }
+
+    /* Small responsive text tweak for very small devices */
+    @media (max-width:420px){ html { font-size: 17px; } }
+  </style>
+</head>
+
+<body class="antialiased" id="body">
+
+  <!-- Header -->
+  <header class="max-w-4xl mx-auto p-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="inline-block text-sm px-3 py-2 bg-pink-400 text-white rounded-md shadow">← Back</a>
+
+      <!-- Last edited button -->
+      <button id="lastEditedBtn" aria-expanded="false"
+        class="inline-block text-sm px-3 py-2 bg-gray-700 text-white rounded-md shadow hover:bg-gray-800">Last edited</button>
+
+      <!-- Reading time display (auto) -->
+      <div id="readingTime" class="text-xs text-gray-500 ml-2 hidden sm:inline-block">—</div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Theme toggle -->
+      <button id="themeToggle"
+              class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md shadow bg-gray-100 hover:bg-gray-200"
+              aria-label="Toggle theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="text-xs">Theme</span>
+      </button>
+
+
+
+
+    </div>
+  </header>
+
+<!-- Main content area -->
+<main class="max-w-3xl mx-auto card p-6 rounded-xl shadow mb-12">
+
+  <!-- Hero / Title -->
+  <section class="mb-6 fade-in">
+    <h1 class="text-3xl font-bold">
+      My First Power BI Dashboard - Spotify Analysis
+    </h1>
+
+    <img src="capturaPowerBi.png" alt="Spotify Power BI Dashboard"
+         class="rounded-xl shadow mt-4 w-full h-auto object-cover" />
+    <p class="text-xs text-center mt-2">
+      [GRAPH 1] Dashboard overview.
+    </p>
+
+    <p class="mt-4 leading-relaxed">
+      This is my first project using Power BI. In this project, I explain the full process
+      behind building an interactive dashboard from raw data.
+      The dataset was obtained from Kaggle and can be accessed
+      <a href="https://www.kaggle.com/datasets/rohiteng/spotify-music-analytics-dataset-20152025"
+         class="text-blue-600 underline" target="_blank">here</a>.
+      Credit to the original author for providing the dataset.
+    </p>
+
+    <p class="leading-relaxed mt-3">
+      As a first step, I cleaned and standardized the dataset using my own
+      <a href="https://camiiutd.github.io/portfolio/posts/dbcleaner.html"
+         class="text-blue-600 underline" target="_blank">Database Cleaner</a>,
+      removing duplicates, handling missing values, and fixing inconsistencies.
+      After that, the cleaned data was imported into Power BI, where I designed
+      the data model, created DAX measures, and built the final dashboard.
+    </p>
+
+    <p class="leading-relaxed mt-4">
+      Below is a short video showcasing the dashboard interactions and main features.
+    </p>
+
+    <video autoplay loop muted playsinline class="rounded-xl shadow mt-3 w-full">
+      <source src="powerbishowcase.mp4" type="video/mp4">
+    </video>
+    <p class="text-xs text-center mt-2">
+      [GRAPH 2] Dashboard interaction walkthrough.
+    </p>
+
+    <p class="leading-relaxed mt-4">
+      Learning Power BI was a challenging but rewarding experience.
+      I will keep practicing for better layouts and more dynamic dashboards. By far, I prefere working with Power BI rather than using Tableau haha.
+      You can download the Power BI file below.
+    </p>
+
+    <a href="Spotify_Dashboard.pbix"
+       class="inline-block mt-2 text-blue-600 underline"
+       download>
+      Download Power BI file (.pbix)
+    </a>
+
+        <p class="leading-relaxed mt-4">
+      Thank you for reading!
+    </p>
+  </section>
+</main>
+
+
+ <!-- Footer (keep your text) -->
+  <footer class="max-w-3xl mx-auto text-center text-xs text-gray-500 mb-10" id="pageFooter">02/12/2025 - Argentina ⋆. 𐙚 ˚ </footer>
+
+  <!-- Back to top floating button -->
+  <button id="backToTop" aria-label="Back to top"
+    class="fixed right-4 bottom-6 p-3 rounded-full shadow-lg bg-pink-400 text-white z-50 hidden">
+    ↑
+  </button>
+
+  <!-- Last edited modal -->
+  <div id="editedModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-60">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow max-w-sm text-center">
+      <p id="editedText" class="text-gray-700 dark:text-gray-200 mb-4">Last edited: —</p>
+      <button id="closeModal" class="px-3 py-2 bg-pink-400 text-white rounded-md hover:bg-pink-500">Close</button>
+    </div>
+  </div>
+
+  <script>
+    /******************************
+     * Helper: safely query element
+     ******************************/
+    const $ = (sel, ctx = document) => ctx.querySelector(sel);
+
+    /******************************
+     * Fade-in when visible (IntersectionObserver)
+     ******************************/
+    (function fadeInOnScroll(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('visible');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+    })();
+
+    /******************************
+     * Build TOC from titles
+     ******************************/
+    (function buildTOC(){
+      const tocList = document.getElementById('tocList');
+      const titles = document.querySelectorAll('.section-title');
+      titles.forEach(title =>{
+        const text = title.getAttribute('data-en') || title.innerText;
+        const id = title.parentElement.id || text.toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/(^-|-$)/g,'');
+        title.parentElement.id = id;
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="#${id}" class="text-blue-600 hover:underline">${text}</a>`;
+        tocList.appendChild(li);
+      });
+    })();
+
+    /******************************
+     * Copy button handler for code blocks
+     ******************************/
+    document.addEventListener('click', e=>{
+      if(e.target.matches('.copy-btn')){
+        const container = e.target.closest('.code-container');
+        if(!container) return;
+        const code = container.querySelector('pre code');
+        if(!code) return;
+        navigator.clipboard.writeText(code.innerText).then(()=>{
+          const previous = e.target.innerText;
+          e.target.innerText = 'Copied';
+          setTimeout(()=> e.target.innerText = previous,1200);
+        }).catch(()=> alert('Copy failed — try selecting the code manually.'));
+      }
+    });
+
+    /******************************
+     * Reading time (estimated)
+     * Based on main content words
+     ******************************/
+    (function readingTime(){
+      const main = document.querySelector('main');
+      if(!main) return;
+      const text = main.innerText || '';
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const minutes = Math.max(1, Math.round(words / 200)); // 200 wpm
+      const el = document.getElementById('readingTime');
+      el.innerText = `Estimated reading time: ${minutes} min`;
+      el.classList.remove('hidden');
+    })();
+
+    /******************************
+     * Last edited modal (reads footer, fallback to document.lastModified)
+     ******************************/
+    (function lastEdited(){
+      const btn = document.getElementById('lastEditedBtn');
+      const modal = document.getElementById('editedModal');
+      const close = document.getElementById('closeModal');
+      const text = document.getElementById('editedText');
+
+      function getFooterText(){
+        const foot = document.getElementById('pageFooter');
+        if(foot && foot.innerText.trim()) return foot.innerText.trim();
+        return document.lastModified || 'Unknown';
+      }
+
+      btn.addEventListener('click', ()=>{
+        text.innerText = 'Last edited: ' + getFooterText();
+        modal.classList.remove('hidden');
+        btn.setAttribute('aria-expanded','true');
+      });
+
+      close.addEventListener('click', ()=> {
+        modal.classList.add('hidden');
+        btn.setAttribute('aria-expanded','false');
+      });
+
+      modal.addEventListener('click', (e)=> {
+        if(e.target === modal){
+          modal.classList.add('hidden');
+          btn.setAttribute('aria-expanded','false');
+        }
+      });
+    })();
+
+    /******************************
+     * Back to top button behaviour
+     ******************************/
+    (function backToTop(){
+      const btn = document.getElementById('backToTop');
+      window.addEventListener('scroll', ()=>{
+        if(window.scrollY > 240) {
+          btn.classList.add('show');
+          btn.classList.remove('hidden');
+        } else {
+          btn.classList.remove('show');
+          btn.classList.add('hidden');
+        }
+      });
+      btn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+    })();
+
+    
+
+    /******************************
+     * Theme toggle (soft dark-gray)
+     * Default: match system preference (auto)
+     ******************************/
+    (function themeToggle(){
+      const body = document.getElementById('body');
+      const toggle = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
+
+      // check saved preference
+      const saved = localStorage.getItem('nhl_theme'); // 'light'|'dark'|null
+
+      // utility to apply mode
+      function applyMode(mode){
+        if(mode === 'dark'){
+          body.classList.add('dark-mode');
+          body.classList.remove('light-mode');
+          icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#e6eef8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        } else {
+          body.classList.remove('dark-mode');
+          body.classList.add('light-mode');
+          icon.innerHTML = '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>';
+        }
+      }
+
+      // initial: system preference unless saved
+      if(saved === 'light') applyMode('light');
+      else if(saved === 'dark') applyMode('dark');
+      else {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyMode(prefersDark ? 'dark' : 'light');
+      }
+
+      // toggle on click
+      toggle.addEventListener('click', ()=>{
+        const isDark = body.classList.contains('dark-mode');
+        const next = isDark ? 'light' : 'dark';
+        applyMode(next);
+        localStorage.setItem('nhl_theme', next);
+      });
+    })();
+
+    /******************************
+     * Initialize small accessibility details
+     ******************************/
+    (function initAccess(){
+      // ensure code blocks visible in dark-mode
+      document.querySelectorAll('.code-container pre').forEach(pre=>{
+        pre.style.background = 'transparent';
+      });
+    })();
+
+
+  </script>
+
+</body>
+</html>

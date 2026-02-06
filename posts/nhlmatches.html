@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NHL Matches Analysis (2000–2019)</title>
+
+  <!-- SEO / Open Graph -->
+  <meta name="description" content="NHL match data analysis (2000–2019) using R. Goals per game, team performance and game-level insights." />
+  <meta name="keywords" content="NHL analysis, NHL draft, hockey statistics, data science, pandas, matplotlib, sports analytics" />
+  <meta name="author" content="Camila Nohara Arakaki" />
+  <meta property="og:title" content="NHL History Data Analysis (1963–2022)" />
+  <meta property="og:description" content="Visual analysis of NHL draft data using Python, including PPG leaders, goalie performance, team drafting history, and more." />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content="mcdavid.png" />
+  <meta property="og:url" content="https://camiiutd.github.io/portfolio/posts/nhlinsight.html" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .toc a:hover {
+  color: var(--accent);
+}
+
+    /* Smooth scrolling */
+    html { scroll-behavior: smooth; }
+
+    /* Small tweaks beyond Tailwind */
+    pre { white-space: pre; }
+    .toc a{ text-decoration: none; }
+
+    /* Fade-in animation for sections */
+    .fade-in { opacity: 0; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* Soft dark-gray theme variables (used when .dark-mode applied) */
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --muted: #374151;
+      --accent: #ec4899; /* pink-400 */
+      --link: #2563eb; /* blue-600 */
+      --code: #111827;
+    }
+    .dark-mode {
+      --bg: #0f1722;      /* our soft dark base */
+      --card: #0b1220;    /* slightly lighter card */
+      --muted: #cbd5e1;
+      --accent: #f472b6;  /* softer pink on dark */
+      --link: #93c5fd;    /* light blue */
+      --code: #e6eef8;
+    }
+
+    /* Use variables to override colors for non-Tailwind parts */
+    body { background: var(--bg); color: var(--muted); }
+    .card { background: var(--card); }
+    .accent { color: var(--accent); }
+    a { color: var(--link); }
+
+    /* Sticky TOC on wide screens */
+    @media (min-width: 768px) {
+    .toc-card { position: static; }
+    }
+
+    /* Back-to-top button */
+    #backToTop { transition: opacity .2s ease, transform .2s ease; opacity: 0; transform: translateY(12px); }
+    #backToTop.show { opacity: 1; transform: translateY(0); }
+
+    /* Small responsive text tweak for very small devices */
+    @media (max-width:420px){ html { font-size: 17px; } }
+  </style>
+</head>
+
+<body class="antialiased" id="body">
+
+  <!-- Header -->
+  <header class="max-w-4xl mx-auto p-4 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="inline-block text-sm px-3 py-2 bg-pink-400 text-white rounded-md shadow">← Back</a>
+
+      <!-- Last edited button -->
+      <button id="lastEditedBtn" aria-expanded="false"
+        class="inline-block text-sm px-3 py-2 bg-gray-700 text-white rounded-md shadow hover:bg-gray-800">Last edited</button>
+
+      <!-- Reading time display (auto) -->
+      <div id="readingTime" class="text-xs text-gray-500 ml-2 hidden sm:inline-block">—</div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <!-- Theme toggle -->
+      <button id="themeToggle"
+              class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md shadow bg-gray-100 hover:bg-gray-200"
+              aria-label="Toggle theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span class="text-xs">Theme</span>
+      </button>
+
+
+
+
+    </div>
+  </header>
+
+  <!-- Main content area (keeps your content exactly) -->
+  <main class="max-w-4xl mx-auto card p-6 rounded-xl shadow mb-12">
+
+
+    <!-- Hero / Title (exact content preserved) -->
+    <section class="mb-6 fade-in">
+      <h1 class="text-3xl font-bold" data-en="NHL Analysis (1963 - 2022)">NHL Matches Analysis (2000-2019) </h1>
+
+      <img src="mackinnonmakar.jpg" alt="avs" class="rounded-xl shadow mt-4 w-full h-auto object-cover" />
+
+<p class="mt-4 leading-relaxed">
+  This time, I will analyze NHL game data using 
+  <a href="https://www.kaggle.com/datasets/martinellis/nhl-game-data" class="text-blue-600 underline" target="_blank">this</a> dataset with R.
+  Shoutout to the dataset creator! This is my first project in R after completing Udacity’s 
+  <a href="https://www.udacity.com/enrollment/ud651" class="text-blue-600 underline" target="_blank">Data Analysis with R</a> course, so I was pretty excited to start this project and show what I learned :).
+</p>
+    </section>
+
+    <!-- Sticky / collapsible TOC -->
+    <aside id="tocCard" class="toc-card bg-gray-50 p-4 rounded-lg mb-6">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold mb-2">Contents</h3>
+      </div>
+      <nav class="toc">
+        <ul id="tocList" class="space-y-1 text-sm"></ul>
+      </nav>
+    </aside>
+    <section id="data-import" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Import the libraries and .csv file">Import the libraries and some .csv files</h2>
+          <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>matches <- read.csv("game.csv")
+teams <- read_csv("game_teams_stats.csv")
+team_id <- read_csv("team_info.csv")
+players <- read_csv("player_info.csv")
+scratches <- read_csv("game_scratches.csv")
+plays_shots <- read.csv("game_plays.csv")
+
+library(ggplot2)
+library(tidyverse)
+library(sportyr)
+
+pf_teams <- teams %>%
+  left_join(team_id, by = "team_id")
+
+glimpse(pf_teams)
+</code></pre>
+      </div>
+    </section>
+
+    <section id="goals-per-game" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Goals per game">Goals per game</h2>
+<div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>pf_teams %>%
+  filter(is.na(teamName)) %>%
+  select(team_id) %>%
+  distinct()
+
+pf_teams_clean %>%
+  mutate(teamName = reorder(teamName, goals, median)) %>%
+  ggplot(aes(x = teamName, y = goals)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.6, outlier.color = "grey") +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Goals per game by team",
+    x = "Team",
+    y = "Goals per game"
+  )
+</code></pre>
+      </div>
+
+<div class=" rounded-xl shadow my-4 p-4">
+  <img src="goalspergamebyteam.png" alt="Goals per game by team" class="rounded-lg w-full h-auto">
+</div>
+ <p class="text-xs text-center mt-2">[GRAPH 1] Goals per game by team</p>
+
+<p class="mt-4 leading-relaxed">
+Average scoring in the NHL tells only half the story. While most teams gravitate around 3.0 goals per game, the variance is where the real narrative lies. </p>
+<p class="mt-4 leading-relaxed">
+Looking at newer or rebuilding franchises, we see a much wider 'spread' in their box plots compared to established contenders. Established teams have a 'floor' (They rarely get shut out). Newer teams often show a higher ceiling but a much lower floor, resulting in a more
+“boom-or-bust” scoring profile.
+</p>
+</section>
+<section id="goals-scored-against" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Goals scored rather than against">Goals scored rather than against</h2>
+  <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>#filter the teams so no team plays against eo
+pf_gf_ga <- pf_teams_clean %>%
+select(game_id, team_id, teamName, goals) %>%
+rename(goals_for = goals) %>%
+left_join(
+    pf_teams_clean %>%
+      select(game_id, team_id, goals) %>%
+      rename(opponent_id = team_id,
+             goals_against = goals),
+    by = "game_id"
+  ) %>%
+  filter(team_id != opponent_id)
+
+team_gf_ga <- pf_gf_ga %>%
+  group_by(teamName) %>%
+  summarise(
+    avg_gf = mean(goals_for, na.rm = TRUE),
+    avg_ga = mean(goals_against, na.rm = TRUE),
+    gd = avg_gf - avg_ga,
+    games = n()
+  ) %>%
+  ungroup()
+
+team_gf_ga %>%
+  ggplot(aes(x = avg_ga, y = avg_gf)) +
+  geom_point(size = 3, alpha = 0.8, color = "lightblue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
+  geom_text(aes(label = teamName), hjust = -0.1, size = 3) +
+  theme_minimal() +
+  labs(
+    title = "Goals scored vs Goals Against by Team",
+    subtitle = "per game",
+    x = "Goals against",
+    y = "Goals scored"
+  )
+</code></pre>
+      </div>
+  
+  <div class=" rounded-xl shadow my-4 p-4">
+  <img src="goalsagainstvsscored.png" alt="Goals against vs scored" class="rounded-lg w-full h-auto">
+</div>
+<p class="text-xs text-center mt-2">[GRAPH 2] Goals against vs scored.</p>
+<div>
+<p class="mt-4 leading-relaxed">
+This scatter plot provides a snapshot of team performance by comparing offensive output with defensive stability.
+</p>
+<p class="mt-4 leading-relaxed">
+The Bruins, Lightning, and Golden Knights stand out by scoring at a high rate while keeping goals against relatively low.
+</p>
+<p class="mt-4 leading-relaxed">
+In contrast, teams like the Oilers, Sabres, and Coyotes struggle to generate offense and put the puck in the net consistently.
+</p>
+<p class="mt-4 leading-relaxed">
+The <span style="color: blue;">Toronto Maple Leafs</span> score plenty of goals but also allow a significant number, resulting in high-scoring and volatile games.
+</p>
+</div>
+</section>
+<section id="HOA" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Home or Away?">Home or Away?</h2>
+  <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>team_home_away <- pf_home_away %>%
+  group_by(teamName, HoA) %>%
+  summarise(
+    avg_gf = mean(goals_for, na.rm = TRUE),
+    avg_ga = mean(goals_against, na.rm = TRUE),
+    gd = avg_gf - avg_ga,
+    games = n(),
+    .groups = "drop"
+  )
+
+ggplot(team_home_away, aes(avg_ga, avg_gf)) +
+  geom_point(size = 3, alpha = 0.8, color = "blue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  facet_wrap(~ HoA) +
+  theme_minimal() +
+  labs(
+    title = "Goals For vs Goals Against",
+    subtitle = "Home vs Away performance",
+    x = "Goals Against",
+    y = "Goals For"
+  )
+</code></pre>
+      </div>
+<img src="HOA.png" alt="home or away" class="rounded-lg w-full h-auto">
+<p class="text-xs text-center mt-2">[GRAPH 3] Goals per game by team</p>
+<p class="mt-4 leading-relaxed">
+  This visualization compares team offensive output and defensive stability, separated by home and away games.
+</p>
+<p class="mt-4 leading-relaxed">
+  Teams generally perform better at home, scoring more goals while conceding fewer, highlighting a clear home-ice advantage. Away performances tend to be tighter and closer to the break-even line, suggesting more conservative play and greater difficulty in controlling games on the road.
+</p>
+<p class="mt-4 leading-relaxed">
+  Some teams emerge as outliers, displaying stronger performance away from home than at home, and vice versa, indicating that home-ice advantage is not uniform across all teams.
+</p>
+</section>
+<section>
+  
+  <h2 class="section-title text-xl font-bold text-pink-400" data-en="Who had more bad luck?">Who had more bad luck?</h2>
+  <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>pf_player_scratches <- scratches %>%
+  left_join(players, by = "player_id")
+
+player_scratches <- pf_player_scratches %>%
+  group_by(player_id, lastName, primaryPosition) %>%
+  summarise(
+    total_scratches = n(),
+    games_affected = n_distinct(game_id),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(total_scratches))
+
+top_scratched_players <- player_scratches %>%
+  slice_max(total_scratches, n = 15)
+
+top_scratched_players %>%
+  ggplot(aes(x = reorder(lastName , total_scratches),
+             y = total_scratches)) +
+  geom_col(fill = "red", alpha = 0.8) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Players with the most scratches",
+    subtitle = "Total scratches during the season",
+    x = "Player",
+    y = "Number of scratches"
+  )
+</code></pre>
+      </div>  
+  
+  <img src="playersScratched.png"alt="scratches" class="rounded-lg w-full h-auto"
+   class="mt-4 leading-relaxed">
+   <p class="text-xs text-center mt-2">[GRAPH 4] Top scratched players.</p>
+    <div>
+  Nothing much to add in these. Scratches are treated uniformly across teams and games, assuming comparable coaching strategies and roster sizes. Each scratch is weighted equally, regardless of opponent strength or game context.
+ </div>
+</p>
+
+    </section>
+
+<section id="faceoff" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Faceoff %">Faceoff %</h2>
+ 
+  <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>pf_teams %>%
+  filter(!is.na(teamName)) %>%
+  ggplot(aes(x = teamName, y = faceOffWinPercentage)) +
+  geom_boxplot(fill = "lightpink", alpha = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Distribution of Faceoff Win Percentage",
+    x = "Team",
+    y = "Faceoff win %"
+  )
+</code></pre>
+ </div>
+ <div>
+<img src="faceoff.png "alt="scratches" class="rounded-lg w-full h-auto">
+<p class="text-xs text-center mt-2">[GRAPH 5] Faceoff % per team.</p>
+<p class="mt-4 leading-relaxed">
+  Most teams cluster around a faceoff win percentage between 45% and 55%, showing league-wide parity.
+</p>
+ </div>
+ </section>
+ <section id="ShootsvsGoals" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Shoots vs Goals">Shoots vs Goals</h2>
+        <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>
+pf_plays_shots <- plays_shots %>%
+  filter(event %in% c("Shot", "Goal")) %>%
+  mutate(st_x = as.numeric(st_x),
+         st_y = as.numeric(st_y)) %>%
+  filter(!is.na(st_x) & !is.na(st_y))
+
+geom_hockey(league = "NHL") +
+  geom_point(data = pf_plays_shots, 
+             aes(x = abs(st_x), y = st_y, color = event), 
+             alpha = 0.8) +
+  scale_color_manual(values = c("Goal" = "red", "Shot" = "black")) +
+  labs(title = "shoots vs goals") +
+  theme_minimal()
+</code></pre>
+ </div>
+ <div>
+      <img src="shootsvsgoals.png"alt="ShootsvsGoals" class="rounded-lg w-full h-auto">
+      <p class="text-xs text-center mt-2">[GRAPH 6] Shoots vs Goals heatmap.</p>
+      
+<p class="mt-4 leading-relaxed">
+  This visualization was built using the <bold>sportyR</bold> library. The contrast between shot volume and goal locations highlights how spatial features strongly influence scoring efficiency.
+</p>
+<p class="mt-4 leading-relaxed">
+  A clear concentration of goals appears directly in front of the goalie. To verify whether this pattern is statistically meaningful, I estimated the probability of scoring from shots taken from central, straight-on positions.
+</p>
+        <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>pf_plays_dist <- pf_plays_shots %>%
+  mutate(
+    dist_arco = sqrt((abs(st_x) - 89)^2 + (st_y)^2),
+    es_gol = ifelse(event == "Goal", 1, 0)
+  )
+
+dist_por_equipo <- pf_plays_dist %>%
+  group_by(team_id_for) %>%
+  summarise(
+    dist_media = mean(dist_arco, na.rm = TRUE),
+    total_tiros = n()
+  ) %>%
+  left_join(team_id, by = c("team_id_for" = "team_id")) %>%
+  arrange(desc(dist_media))
+
+ggplot(pf_plays_dist, aes(x = dist_arco, y = es_gol)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), color = "red") +
+  labs(
+    title = "Probability of goal vs distance",
+    x = "Goal distance",
+    y = "Probability of scoring"
+  ) +
+  theme_minimal()
+</code></pre>
+ </div>
+<img src="goalvsdistance.png"alt="goalsdistance" class="rounded-lg w-full h-auto">
+<p class="text-xs text-center mt-2">[GRAPH 7] Goal vs Distance curve.</p>
+<p class="mt-4 leading-relaxed">
+  Shot distance was made using rink coordinates and modeled against goal outcomes using a logistic regression. The resulting curve shows a clear non-linear decay in scoring probability as distance from the net increases.
+</p>
+ </div>
+ </section>
+ <section id="goaliespercentage" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Save % for goalies">Save % for goalies</h2>
+        <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>goalies <- read.csv("game_goalie_stats.csv")
+
+ggplot(goalies %>% filter(decision %in% c("W", "L")), 
+       aes(x = decision, y = savePercentage, fill = decision)) +
+  geom_boxplot(alpha = 0.6) +
+  facet_wrap(~decision, scales = "free") +
+  theme_minimal() +
+  labs(title = "Save % for goalies")
+</code></pre>
+ </div>
+<div>
+      <img src="savepctg.png"alt="SavePercentageGoalies" class="rounded-lg w-full h-auto">
+<p class="text-xs text-center mt-2">[GRAPH 8] Boxplot of goalies save percentage.</p>
+<p class="mt-4 leading-relaxed">
+  Goalies tend to post higher and more consistent save percentages in wins compared to losses, indicating a strong association between goaltending performance and game outcomes.
+</p>
+<p class="mt-4 leading-relaxed">
+  Losses exhibit a wider spread and more extreme low outliers, reflecting games where goaltending performance breaks down and becomes a limiting factor.
+</p>
+</div>
+ </section>
+<section id="topgoalies" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-pink-400" data-en="Top Goalies">Top Goalies</h2>
+        <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>goalie_ranking <- goalies %>%
+  group_by(player_id) %>%
+  summarise(
+    total_shots_faced = sum(shots, na.rm = TRUE),
+    avg_sv_pct = mean(savePercentage, na.rm = TRUE),
+    total_wins = sum(decision == "W", na.rm = TRUE),
+    gaa = (sum(goals, na.rm = TRUE) / (sum(timeOnIce, na.rm = TRUE) / 60)) * 60,
+    gp = n(),
+    .groups = "drop"
+  ) %>%
+  left_join(players, by = "player_id") %>%
+  filter(gp > 100) 
+
+ggplot(goalie_ranking, aes(x = total_shots_faced, y = avg_sv_pct)) +
+  geom_point(aes(size = total_wins, color = total_wins), alpha = 0.7) +
+  geom_text(aes(label = lastName), vjust = -1, size = 3, check_overlap = TRUE) +
+  scale_color_viridis_c(option = "plasma") +
+  theme_minimal() +
+  labs(
+    title = "Top Goalies",
+    x = "Total Shots Faced (Workload)",
+    y = "Average Save Percentage (SV%)",
+    size = "Total Wins",
+    color = "Total Wins"
+  )
+</code></pre>
+ </div>
+<div>
+  <img src="GOALIESTOP.png"alt="TopGoalies" class="rounded-lg w-full h-auto">
+  <p class="text-xs text-center mt-2">[GRAPH 9] Most efficient goalies chart.</p>
+
+<p class="mt-4 leading-relaxed">
+  I decided to take a closer look at the best goalies, as it is my favorite position in hockey.
+</p>
+<p class="mt-4 leading-relaxed">
+  While save percentage generally declines as workload increases, top-performing goalies remain above league averages despite facing a high volume of shots.
+</p>
+  <p class="mt-4 leading-relaxed">
+At the top left of our chart, you can see names like Dominik Hasek and Patrick Roy. These goalies represent the gold standard for efficiency. They maintained elite save percentage levels, but their "Total Shots Faced" on this specific scale is lower than the modern workhorses.
+</p>
+ <p class="mt-4 leading-relaxed"> On the other hand, <b>Fleury</b>, while slightly lower in save percentage, shows his value through his total wins, proving that volume and winning often go hand-in-hand even if efficiency fluctuates. Exactly what you would expect from a first overall pick as a goalie.</p>
+</div>
+</section>
+<section id="leafsinsightOffensive" class="prose mb-6 fade-in">
+
+      <h2 class="section-title text-xl font-bold text-blue-600" data-en="Leafs Offensive Zone Heatmap">Leafs Offensive Zone Heatmap</h2>
+              <div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>leafs_shots <- pf_plays_shots %>%
+  filter(team_id_for == 10)
+
+geom_hockey(league = "NHL", display_range = "offensive") +
+  stat_density_2d(data = leafs_shots, 
+                  aes(x = abs(st_x), y = st_y, fill = ..level..), 
+                  geom = "polygon", alpha = 0.5) +
+  scale_fill_viridis_c(option = "mako") +
+  labs(title = "Leafs Offensive Zone Pressure",
+       subtitle = "Density of all shot attempts",
+       fill = "Shot Density")
+</code></pre>
+ </div>
+ <div>
+  <img src="leafsoffensive.png"alt="LeafsHeatmap" class="rounded-lg w-full h-auto">
+  <p class="text-xs text-center mt-2">[GRAPH 10] Leafs shot density heatmap.</p>
+<p class="mt-4 leading-relaxed">
+  This heatmap shows the density of all shot attempts generated by the Leafs in the offensive zone, highlighting areas where sustained pressure is most frequently applied.
+</p>
+<p class="mt-4 leading-relaxed">
+  The highest density (the light blue area) is located directly in the low slot, right in front of the net. This is excpected since most goals from the league are from there (As showed in Graph 6)
+</p>
+<p class="mt-4 leading-relaxed">
+  You can see that it seems like there is a "V" shape. The pressure fans out toward the faceoff circles. This suggests a heavy cycle game where the puck moves from the corners to the slot or back to the defenders.
+</p>
+</div>
+</section>
+
+<section id="leafsShooting" class="prose mb-6 fade-in">
+<h2 class="section-title text-xl font-bold text-blue-600" data-en="Leafs Shooting Efficiency">Leafs Shooting Efficiency</h2>
+              
+<div class="code-container bg-gray-800 rounded-xl shadow my-4">
+        <div class="bg-gray-700 text-gray-200 px-4 py-2 rounded-t-xl text-sm font-semibold flex justify-between">
+          <span>R</span>
+          <button class="copy-btn text-gray-300 hover:text-white text-xs px-2">Copy</button>
+        </div>
+        <pre class="p-4 text-gray-200 overflow-x-auto text-sm"><code>leafs_efficiency <- pf_plays_shots %>%
+  filter(!is.na(secondaryType)) %>%
+  mutate(is_leafs = ifelse(team_id_for == 10, "Maple Leafs", "Rest of NHL")) %>%
+  group_by(is_leafs, secondaryType) %>%
+  summarise(
+    success_rate = sum(event == "Goal") / n() * 100,
+    .groups = "drop"
+  )
+
+ggplot(leafs_efficiency, aes(x = reorder(secondaryType, success_rate), y = success_rate, fill = is_leafs)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  coord_flip() +
+  scale_fill_manual(values = c("Maple Leafs" = "darkblue", "Rest of NHL" = "grey")) +
+  labs(title = "Shooting Efficiency: Leafs vs NHL Average",
+       x = "Shot Type", y = "Goal Conversion %") +
+  theme_minimal()
+</code></pre>
+ </div>
+
+  <img src="leafsshooting.png"alt="LeafsShootingChart" class="rounded-lg w-full h-auto">
+  <p class="text-xs text-center mt-2">[GRAPH 10] Leafs shooting comparative with the rest of the NHL.</p>
+  
+  
+  <p class="mt-4 leading-relaxed">
+  This chart compares shot-type goal conversion rates between the Toronto Maple Leafs and the rest of the NHL.
+</p>
+  <p class="mt-4 leading-relaxed">
+  The Leafs high deflection rate means they don't necessarily need a "clean" shot to score; they just need to get the puck toward the net when bodies are in the way.
+They underperform the NHL average on Tip-ins, which may indicate fewer structured point shots with intentional redirections or less sustained screen presence during set plays.
+</p>
+</section>
+
+<section id="ConclusionFinalThoughts" class="prose mb-6 fade-in">
+<h2 class="section-title text-xl font-bold text-pink-400" data-en="Conclusion and Final Thoughts">Conclusion and Final Thoughts</h2>
+  <p class="mt-4 leading-relaxed">
+  This project reflects my first analytical work in R, combining data cleaning, feature engineering, visualization, and interpretation. While the analysis is descriptive rather than predictive, it establishes a strong foundation for more advanced modeling approaches such as expected goals, game-state adjustments, or player-level impact metrics.
+</p>
+<p class="mt-4 leading-relaxed">
+  The Toronto Maple Leafs case study highlights how team identity and tactical choices can be inferred directly from data, while the goaltender analysis showcases some of the most prestigious goalies in NHL history and the trade-off between efficiency and workload.
+</p>
+
+<p class="mt-4 leading-relaxed text-blue-600">
+  Thank you for reading! Go Leafs Go!
+</p>
+
+<img src="wollstolarz.jpg"alt="wollstolarzgoalies" class="rounded-lg w-full h-auto">
+</section>
+
+<!-- Footer (keep your text) -->
+  <footer class="max-w-3xl mx-auto text-center text-xs text-gray-500 mb-10" id="pageFooter">06/02/2026 - Argentina ⋆. 𐙚 ˚ </footer>
+
+  <!-- Back to top floating button -->
+  <button id="backToTop" aria-label="Back to top"
+    class="fixed right-4 bottom-6 p-3 rounded-full shadow-lg bg-pink-400 text-white z-50 hidden">
+    ↑
+  </button>
+
+  <!-- Last edited modal -->
+  <div id="editedModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-60">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-xl shadow max-w-sm text-center">
+      <p id="editedText" class="text-gray-700 dark:text-gray-200 mb-4">Last edited: —</p>
+      <button id="closeModal" class="px-3 py-2 bg-pink-400 text-white rounded-md hover:bg-pink-500">Close</button>
+    </div>
+  </div>
+
+
+
+
+<script>
+    /******************************
+     * Helper: safely query element
+     ******************************/
+    const $ = (sel, ctx = document) => ctx.querySelector(sel);
+
+    /******************************
+     * Fade-in when visible (IntersectionObserver)
+     ******************************/
+    (function fadeInOnScroll(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('visible');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+    })();
+
+    /******************************
+     * Build TOC from titles
+     ******************************/
+    (function buildTOC(){
+      const tocList = document.getElementById('tocList');
+      const titles = document.querySelectorAll('.section-title');
+      titles.forEach(title =>{
+        const text = title.getAttribute('data-en') || title.innerText;
+        const id = title.parentElement.id || text.toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/(^-|-$)/g,'');
+        title.parentElement.id = id;
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="#${id}" class="text-blue-600 hover:underline">${text}</a>`;
+        tocList.appendChild(li);
+      });
+    })();
+
+    /******************************
+     * Copy button handler for code blocks
+     ******************************/
+    document.addEventListener('click', e=>{
+      if(e.target.matches('.copy-btn')){
+        const container = e.target.closest('.code-container');
+        if(!container) return;
+        const code = container.querySelector('pre code');
+        if(!code) return;
+        navigator.clipboard.writeText(code.innerText).then(()=>{
+          const previous = e.target.innerText;
+          e.target.innerText = 'Copied';
+          setTimeout(()=> e.target.innerText = previous,1200);
+        }).catch(()=> alert('Copy failed — try selecting the code manually.'));
+      }
+    });
+
+    /******************************
+     * Reading time (estimated)
+     * Based on main content words
+     ******************************/
+    (function readingTime(){
+      const main = document.querySelector('main');
+      if(!main) return;
+      const text = main.innerText || '';
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      const minutes = Math.max(1, Math.round(words / 200)); // 200 wpm
+      const el = document.getElementById('readingTime');
+      el.innerText = `Estimated reading time: ${minutes} min`;
+      el.classList.remove('hidden');
+    })();
+
+    /******************************
+     * Last edited modal (reads footer, fallback to document.lastModified)
+     ******************************/
+    (function lastEdited(){
+      const btn = document.getElementById('lastEditedBtn');
+      const modal = document.getElementById('editedModal');
+      const close = document.getElementById('closeModal');
+      const text = document.getElementById('editedText');
+
+      function getFooterText(){
+        const foot = document.getElementById('pageFooter');
+        if(foot && foot.innerText.trim()) return foot.innerText.trim();
+        return document.lastModified || 'Unknown';
+      }
+
+      btn.addEventListener('click', ()=>{
+        text.innerText = 'Last edited: ' + getFooterText();
+        modal.classList.remove('hidden');
+        btn.setAttribute('aria-expanded','true');
+      });
+
+      close.addEventListener('click', ()=> {
+        modal.classList.add('hidden');
+        btn.setAttribute('aria-expanded','false');
+      });
+
+      modal.addEventListener('click', (e)=> {
+        if(e.target === modal){
+          modal.classList.add('hidden');
+          btn.setAttribute('aria-expanded','false');
+        }
+      });
+    })();
+
+    /******************************
+     * Back to top button behaviour
+     ******************************/
+    (function backToTop(){
+      const btn = document.getElementById('backToTop');
+      window.addEventListener('scroll', ()=>{
+        if(window.scrollY > 240) {
+          btn.classList.add('show');
+          btn.classList.remove('hidden');
+        } else {
+          btn.classList.remove('show');
+          btn.classList.add('hidden');
+        }
+      });
+      btn.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+    })();
+
+    
+
+    /******************************
+     * Theme toggle (soft dark-gray)
+     * Default: match system preference (auto)
+     ******************************/
+    (function themeToggle(){
+      const body = document.getElementById('body');
+      const toggle = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
+
+      // check saved preference
+      const saved = localStorage.getItem('nhl_theme'); // 'light'|'dark'|null
+
+      // utility to apply mode
+      function applyMode(mode){
+        if(mode === 'dark'){
+          body.classList.add('dark-mode');
+          body.classList.remove('light-mode');
+          icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#e6eef8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+        } else {
+          body.classList.remove('dark-mode');
+          body.classList.add('light-mode');
+          icon.innerHTML = '<path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="#111827" stroke-width="1.5" stroke-linecap="round"/>';
+        }
+      }
+
+      // initial: system preference unless saved
+      if(saved === 'light') applyMode('light');
+      else if(saved === 'dark') applyMode('dark');
+      else {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyMode(prefersDark ? 'dark' : 'light');
+      }
+
+      // toggle on click
+      toggle.addEventListener('click', ()=>{
+        const isDark = body.classList.contains('dark-mode');
+        const next = isDark ? 'light' : 'dark';
+        applyMode(next);
+        localStorage.setItem('nhl_theme', next);
+      });
+    })();
+
+    /******************************
+     * Initialize small accessibility details
+     ******************************/
+    (function initAccess(){
+      // ensure code blocks visible in dark-mode
+      document.querySelectorAll('.code-container pre').forEach(pre=>{
+        pre.style.background = 'transparent';
+      });
+    })();
+
+
+  </script>
+
+
+</body>
+</html>
